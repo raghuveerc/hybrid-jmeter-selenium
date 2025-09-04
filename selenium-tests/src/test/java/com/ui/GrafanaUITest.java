@@ -1,13 +1,8 @@
 package com.ui;
 
-import io.github.bonigarcia.wdm.WebDriverManager;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
-import org.openqa.selenium.firefox.FirefoxDriver;
-import org.openqa.selenium.firefox.FirefoxOptions;
-import org.openqa.selenium.edge.EdgeDriver;
-import org.openqa.selenium.edge.EdgeOptions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.By;
@@ -27,6 +22,8 @@ public class GrafanaUITest {
     private WebDriverWait wait;
     private String baseUrl = "https://quickpizza.grafana.com";
     private String reportPath = "../reports/selenium-report/";
+    private String chromeDriverPath = System.getProperty("webdriver.chrome.driver", 
+        System.getenv("CHROMEDRIVER_PATH"));
     
     @BeforeClass
     public void setupClass() {
@@ -38,38 +35,33 @@ public class GrafanaUITest {
     }
     
     @BeforeMethod
-    @Parameters({"browser", "headless"})
-    public void setup(@Optional("chrome") String browser, @Optional("false") String headless) {
-        // Setup WebDriver based on browser parameter
-        switch (browser.toLowerCase()) {
-            case "firefox":
-                WebDriverManager.firefoxdriver().setup();
-                FirefoxOptions firefoxOptions = new FirefoxOptions();
-                if ("true".equals(headless)) {
-                    firefoxOptions.addArguments("--headless");
-                }
-                driver = new FirefoxDriver(firefoxOptions);
-                break;
-            case "edge":
-                WebDriverManager.edgedriver().setup();
-                EdgeOptions edgeOptions = new EdgeOptions();
-                if ("true".equals(headless)) {
-                    edgeOptions.addArguments("--headless");
-                }
-                driver = new EdgeDriver(edgeOptions);
-                break;
-            default: // chrome
-                WebDriverManager.chromedriver().setup();
-                ChromeOptions chromeOptions = new ChromeOptions();
-                if ("true".equals(headless)) {
-                    chromeOptions.addArguments("--headless");
-                }
-                chromeOptions.addArguments("--no-sandbox");
-                chromeOptions.addArguments("--disable-dev-shm-usage");
-                driver = new ChromeDriver(chromeOptions);
-                break;
+    @Parameters({"headless"})
+    public void setup(@Optional("false") String headless) {
+        // Setup Chrome WebDriver with ChromeDriver from Nexus
+        ChromeOptions chromeOptions = new ChromeOptions();
+        
+        // Configure Chrome options
+        if ("true".equals(headless)) {
+            chromeOptions.addArguments("--headless");
+        }
+        chromeOptions.addArguments("--no-sandbox");
+        chromeOptions.addArguments("--disable-dev-shm-usage");
+        chromeOptions.addArguments("--disable-gpu");
+        chromeOptions.addArguments("--window-size=1920,1080");
+        chromeOptions.addArguments("--disable-extensions");
+        chromeOptions.addArguments("--disable-plugins");
+        chromeOptions.addArguments("--disable-images");
+        chromeOptions.addArguments("--disable-javascript");
+        
+        // Set ChromeDriver path from Nexus
+        if (chromeDriverPath != null && !chromeDriverPath.isEmpty()) {
+            System.setProperty("webdriver.chrome.driver", chromeDriverPath);
+            System.out.println("Using ChromeDriver from: " + chromeDriverPath);
+        } else {
+            System.err.println("Warning: ChromeDriver path not specified. Set webdriver.chrome.driver system property or CHROMEDRIVER_PATH environment variable");
         }
         
+        driver = new ChromeDriver(chromeOptions);
         wait = new WebDriverWait(driver, Duration.ofSeconds(10));
         driver.manage().window().maximize();
         driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(5));
